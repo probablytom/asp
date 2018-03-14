@@ -2,8 +2,6 @@
 Core weaving functionality.
 @author twsswt
 """
-import ast
-import copy
 import inspect
 
 from inspect import getmembers
