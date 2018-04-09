@@ -1,5 +1,5 @@
 import unittest
-from asp import weave_clazz, prelude, encore
+from asp import weave_clazz, prelude, encore, error_handler, generate_around_advice
 
 
 class CountingAspect(object):
@@ -12,7 +12,6 @@ class CountingAspect(object):
     def encore(self, attribute, context, result):
         pass
 
-
 class Target(object):
 
     def __init__(self):
@@ -24,6 +23,9 @@ class Target(object):
     def increment_count(self):
         self.count += 1
         return self
+
+    def raise_exception(self):
+        raise Exception()
 
 
 class WeaverTestCase(unittest.TestCase):
@@ -65,6 +67,70 @@ class WeaverTestCase(unittest.TestCase):
         target.increment_count()
 
         self.assertEqual(target.count, 5)
+
+    def test_error_raising(self):
+        class ExceptionHandlingCounter(CountingAspect):
+            def error_handling(aspect_self, attribute, context, exception):
+                self.assertTrue(True)  # We handled! Pass the test!
+
+        ehc = ExceptionHandlingCounter()
+        advice = {Target.raise_exception: ehc}
+        weave_clazz(Target, advice)
+
+        target = Target()
+
+        try:
+            target.raise_exception()
+        except:
+            self.assertTrue(False)  # We should have caught this; fail the test.
+
+    def test_error_handling_decorator(self):
+        @error_handler
+        def handle_exception(attribute, context, exception):
+            self.assertTrue(True)  # We caught the exception successfully! Pass!
+
+        advice = {Target.raise_exception: handle_exception}
+        weave_clazz(Target, advice)
+
+        target = Target()
+
+        try:
+            target.raise_exception()
+        except:
+            self.assertTrue(False)  # We should have caught this; fail the test.
+
+    def test_around(self):
+
+        class AroundTestingAspect(CountingAspect):
+            def around(self, attribute, context, *args, **kwargs):
+                self.prelude(attribute, context, *args, **kwargs)
+                result = attribute(*args, **kwargs)
+                self.encore(attribute, context, result)
+                return result
+
+        test_around = AroundTestingAspect()
+        advice = {Target.foo: test_around}
+        weave_clazz(Target, advice)
+
+        Target().foo().foo().foo()
+        self.assertEqual(test_around.invocations, 3)
+
+    def test_around_decorator(self):
+
+        def set_count_to_5_before_running(attr, context, *args, **kwargs):
+            context.count = 5
+
+        def increment_counter_after_running(attr, context, *args, **kwargs):
+            context.count += 1
+
+        around_advice = generate_around_advice(set_count_to_5_before_running, increment_counter_after_running)
+        advice = {Target.increment_count: around_advice}
+        weave_clazz(Target, advice)
+
+        target = Target()
+        target.increment_count()
+
+        self.assertEqual(target.count, 5+1+1)
 
 
 if __name__ == '__main__':
