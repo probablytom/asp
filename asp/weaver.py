@@ -27,6 +27,11 @@ class IdentityAspect(object):
         '''
         raise exception
 
+    def around(self, attribute, context, *args, **kwargs):
+        if inspect.ismethod(attribute) and not hasattr(attribute, "__self__"):
+            args = (context,) + args
+        return attribute(*args, **kwargs)
+
 
 def prelude(func):
     '''
