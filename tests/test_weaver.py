@@ -101,19 +101,26 @@ class WeaverTestCase(unittest.TestCase):
 
     def test_around(self):
 
-        class AroundTestingAspect(CountingAspect):
+        class AroundTestingAspect(object):
             def around(self, attribute, context, *args, **kwargs):
-                self.prelude(attribute, context, *args, **kwargs)
+                context.count = context.count ** 3
                 result = attribute(*args, **kwargs)
-                self.encore(attribute, context, result)
+                context.count *= 2
                 return result
 
+            def prelude(self, attribute, context, *args, **kwargs):
+                context.count += 2
+
         test_around = AroundTestingAspect()
-        advice = {Target.foo: test_around}
+        advice = {Target.increment_count: test_around}
         weave_clazz(Target, advice)
 
-        Target().foo().foo().foo()
-        self.assertEqual(test_around.invocations, 3)
+        target = Target()
+        target.increment_count()
+
+        # We add two in the prelude, then ^3, then add one, then multiply by two.
+        # This tests that the prelude is being executed before the around, but also that both are being executed.
+        self.assertEqual(target.count, ((2**3)+1)*2)
 
     def test_around_decorator(self):
 

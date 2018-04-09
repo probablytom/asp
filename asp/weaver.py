@@ -16,16 +16,21 @@ class IdentityAspect(object):
     def encore(self, attribute, context, result):
         pass
 
-    def error_handling(self, attribute, context, hell):
+    def error_handling(self, attribute, context, exception):
         '''
         Takes in an exception and handles it.
         The identity is to raise the exception anyway (as if the handler was never there)
         :param attribute: The attribute which raised the excdption
         :param context: The context of the attribute (generally, the object of a method)
-        :param hell: the exception raised
+        :param exception: the exception raised
         :return: pass
         '''
-        raise hell
+        raise exception
+
+    def around(self, attribute, context, *args, **kwargs):
+        if inspect.ismethod(attribute) and not hasattr(attribute, "__self__"):
+            args = (context,) + args
+        return attribute(*args, **kwargs)
 
 
 def prelude(func):
@@ -128,22 +133,24 @@ def weave_clazz(clazz, advice):
 
                 # Run our function
                 try:
-                    # Just use `around` if it exists
+                    if hasattr(aspect, 'prelude'):
+                        aspect.prelude(attribute, self, *args, **kwargs)
+
                     if hasattr(aspect, 'around'):
-                        return aspect.around(attribute, self, *args, **kwargs)
-
-                    # No `around`, so rely on prelude/encore.
+                        result = aspect.around(attribute, self, *args, **kwargs)
                     else:
-                            aspect.prelude(attribute, self, *args, **kwargs)
 
-                            if inspect.ismethod(attribute):
-                                args = (self,) + args ## If we're on a method, supply `self` as the first parameter.
+                        # If we're on an unbound method, supply `self` as the first parameter.
+                        func_args = args
+                        if inspect.ismethod(attribute):
+                            func_args = (self,) + args
 
-                            result = reference_function(*args, **kwargs)
+                        result = reference_function(*func_args, **kwargs)
 
-                            aspect.encore(attribute, self, result)
+                    if hasattr(aspect, 'encore'):
+                        aspect.encore(attribute, self, result)
 
-                            return result
+                    return result
 
                 # If exceptions are raised, handle with the error handler.
                 except Exception as exception:
