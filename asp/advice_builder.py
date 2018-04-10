@@ -71,5 +71,26 @@ class AdviceBuilder(object):
         self.advice[target] = specific_advice
         return self
 
+    def add_advice(self, target, advice):
+        target_advice = self.advice.get(target, FlexibleAdvice(target))
+
+        if hasattr(advice, 'prelude'):
+            target_advice.preludes.append(advice.prelude)
+
+        if hasattr(advice, 'encore'):
+            target_advice.encores.append(advice.encore)
+
+        if hasattr(advice, 'error_handling'):
+            target_advice.error_handlers.append(advice.error_handling)
+
+        if hasattr(advice, 'around'):
+            target_advice.around_functions.append(advice.around)
+
+        self.advice[target] = target_advice
+
+    def add_dictionary_advice(self, advice_dict):
+        for target, advice in advice_dict.items():
+            self.add_advice(target, advice)
+
     def apply(self):
         [aspect.apply_advice() for aspect in self.advice.values()]

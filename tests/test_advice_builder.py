@@ -1,5 +1,5 @@
 import unittest
-from asp import AdviceBuilder, generate_around_advice
+from asp import AdviceBuilder, generate_around_advice, IdentityAspect
 
 class Target(object):
     def __init__(self):
@@ -11,6 +11,24 @@ class Target(object):
 
     def raise_exception(self):
         raise Exception
+
+    def noop(self):
+        pass
+
+
+class TestAdviceClass(IdentityAspect):
+    def prelude(self, attribute, context, *args, **kwargs):
+        context.count += 1
+
+    def encore(self, attribute, context, result):
+        raise Exception
+
+    def around(self, attribute, context, *args, **kwargs):
+        context.count += 1
+        return attribute(*args, **kwargs)
+
+    def error_handling(self, attribute, context, exception):
+        context.exceptions_handled += 1
 
 
 def increment_count(attribute, context, optional_result=None):
@@ -133,4 +151,27 @@ class TestAdviceBuilder(unittest.TestCase):
         # We want arounds to wrap around each other, so we want to add three twice, then increment, then mult by 4.
         self.assertEqual(target.count, ((3+(3+1))*2)*2)
 
+    def test_advice_builder_with_advice_class(self):
+        builder = AdviceBuilder()
+        advice = TestAdviceClass()
+        builder.add_advice(Target.noop, advice)
+        builder.apply()
+
+        target = Target()
+        target.noop()
+
+        self.assertEqual(target.count, 1+1)
+        self.assertEqual(target.exceptions_handled, 1)
+
+    def test_advice_builder_with_dictionary_format_advice(self):
+        builder = AdviceBuilder()
+        advice = {Target.noop: TestAdviceClass()}
+        builder.add_dictionary_advice(advice)
+        builder.apply()
+
+        target = Target()
+        target.noop()
+
+        self.assertEqual(target.count, 1+1)
+        self.assertEqual(target.exceptions_handled, 1)
 
