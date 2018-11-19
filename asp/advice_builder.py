@@ -4,6 +4,7 @@ A nice API to build advice from.
 '''
 from .weaver import IdentityAspect, weave_clazz
 from functools import partial
+from inspect import ismethod, isfunction
 
 
 class FlexibleAdvice(IdentityAspect):
@@ -40,7 +41,17 @@ class FlexibleAdvice(IdentityAspect):
         return nested_around(*args, **kwargs)
 
     def apply_advice(self):
-        weave_clazz(self.target.im_class, {self.target: self})
+
+        # For callable objects.
+        if callable(self.target) and not (isfunction(self.target) or ismethod(self.target)):
+            self.target = self.target.__call__
+
+        if "im_class" in dir(self.target):
+            weave_clazz(self.target.im_class, {self.target: self})
+        elif "__class__" in dir(self.target):
+            weave_clazz(self.target.__class__, {self.target: self})
+        else:
+            raise Exception("Can't get a class from the target a FlexibleAdvice is trying to apply itself to!")
 
 
 class AdviceBuilder(object):
