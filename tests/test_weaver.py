@@ -1,5 +1,5 @@
 import unittest
-from asp import weave_clazz, prelude, encore, error_handler, generate_around_advice
+from drawer import weave_clazz, prelude, encore, error_handler, generate_around_advice
 
 
 class CountingAspect(object):

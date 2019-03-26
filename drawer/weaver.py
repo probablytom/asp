@@ -144,7 +144,7 @@ def weave_clazz(clazz, advice):
                     reference_function = attribute.im_func
 
                     # Ensure that advice key is unbound method for instance methods.
-                    # advice_key = getattr(attribute.im_class, attribute.func_name)
+                    advice_key = getattr(attribute.im_class, attribute.func_name)
 
                 # Retrieve our aspect
                 aspect = advice.get(advice_key, identity)
