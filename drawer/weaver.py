@@ -178,6 +178,7 @@ def weave_clazz(clazz, advice):
                         raise exception
 
             wrap.func_name = attribute.func_name
+            wrap.func_dict = attribute.func_dict  # Preserves any attribute changes to the method / function
 
             return wrap
 

@@ -15,12 +15,12 @@ from setuptools import find_packages, setup, Command
 
 # Package meta-data.
 NAME = 'drawer'
-DESCRIPTION = 'Dynamically Re-applyable Aspect WEaver — an implementation of dynamic aspect weaving in Python.'
+DESCRIPTION = 'Dynamically Re-applyable Aspect WEaveR — an implementation of dynamic aspect weaving in Python.'
 URL = 'http://probablytom.com/'
 EMAIL = 'w.wallis.1@research.gla.ac.uk'
 AUTHOR = 'Tom Wallis'
 REQUIRES_PYTHON = '<3'
-VERSION = '0.1a3'
+VERSION = '0.1a4'
 EXCLUDABLES = ('venv','tests',)
 
 # What packages are required for this module to be executed?
