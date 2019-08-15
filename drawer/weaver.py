@@ -7,6 +7,7 @@ import inspect
 from functools import partial
 
 
+advice_cache = dict()  # classes to lists of advice dicts
 _reference_get_attributes = dict()
 
 
@@ -125,6 +126,11 @@ def weave_clazz(clazz, advice):
     if clazz not in _reference_get_attributes:
         _reference_get_attributes[clazz] = clazz.__getattribute__
 
+    if clazz in advice_cache:
+        advice_cache[clazz].update(advice)
+    else:
+        advice_cache[clazz] = advice
+
     def __weaved_getattribute__(self, item):
         attribute = object.__getattribute__(self, item)
 
@@ -134,6 +140,8 @@ def weave_clazz(clazz, advice):
         elif inspect.isfunction(attribute) or inspect.ismethod(attribute):
 
             def wrap(*args, **kwargs):
+
+                advice = advice_cache[clazz]  # In case we've recieved _multiple_ pieces of advice
 
                 # Sensible defaults for a function.
                 reference_function = attribute
