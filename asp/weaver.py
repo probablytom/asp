@@ -51,7 +51,7 @@ def weave_clazz(clazz, advice):
         elif inspect.ismethod(attribute):
 
             def wrap(*args, **kwargs):
-                reference_function = attribute.__func__
+                #reference_function = attribute.__func__
                 # Ensure that advice key is unbound method for instance methods.
                 advice_key = getattr(attribute.__self__.__class__, attribute.__func__.__name__)
 
@@ -60,17 +60,20 @@ def weave_clazz(clazz, advice):
                 aspect.prelude(attribute, self, *args, **kwargs)
 
                 # Execute the intercepted method.
-                result = reference_function(self, *args, **kwargs)
-                aspect.encore(attribute, self, result)
-                return result
-            wrap.__name__ = attribute.__name__
+                result = attribute(*args, **kwargs)
 
+                aspect.encore(attribute, self, result)
+
+                return result
+
+            if hasattr(attribute, 'default_cost'):
+                wrap.default_cost = attribute.default_cost
+            wrap.__name__ = attribute.__name__
             return wrap
 
         elif inspect.isfunction(attribute):
 
             def wrap(*args, **kwargs):
-
                 reference_function = attribute
                 advice_key = reference_function
                 aspect = advice.get(advice_key, identity)
@@ -82,6 +85,9 @@ def weave_clazz(clazz, advice):
                 aspect.encore(attribute, self, result)
                 return result
 
+            if hasattr(attribute, 'default_cost'):
+                wrap.default_cost = attribute.default_cost
+            wrap.__name__ = attribute.__name__
             return wrap
 
         else:
